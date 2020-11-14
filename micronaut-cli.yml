@@ -1,0 +1,6 @@
+applicationType: cli
+defaultPackage: org.besctar.bookmark
+testFramework: spock
+sourceLanguage: java
+buildTool: maven
+features: [annotation-api, app-name, http-client, java, logback, maven, picocli, picocli-java-application, picocli-spock, readme, shade, spock, yaml]

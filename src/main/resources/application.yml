@@ -1,0 +1,5 @@
+micronaut:
+  application:
+    name: bookmarkCleanup
+escapeParams: utm_referrer,utm_campaign,utm_content,utm_source,utm_medium,b_campaign,b_source,b_group,b_subnetwork,utm_nooverride,feature,dbr,rfrom
+
