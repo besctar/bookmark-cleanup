@@ -3,6 +3,7 @@ package org.besctar.bookmark.model;
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,17 +18,32 @@ public class Bookmarks {
     }
 
     @JSONField(serialize = false)
-    public List<Bookmark> getBookmarkBarFlat() {
-        return getBookmarkBar().flattenChildren();
+    public List<Bookmark> getBBarBookmarkFlat() {
+        return getBookmarkBar().flattenChildrenBookmarks();
+    }
+
+    @JSONField(serialize = false)
+    public List<Bookmark> getBBarDirectoriesFlat() {
+        return getBookmarkBar().flattenChildrenDirectories();
     }
 
     @JSONField(serialize = false)
     public int getBookmarkBarSize() {
-        return getBookmarkBarFlat().size();
+        return getBBarBookmarkFlat().size();
+    }
+
+    @JSONField(serialize = false)
+    public int getMaxId() {
+        return getRoots().values()
+                .stream()
+                .flatMap(it -> it.flattenChildrenStream(bookmark -> true))
+                .max(Comparator.comparingInt(Bookmark::getIdInt))
+                .map(Bookmark::getIdInt)
+                .orElse(0);
     }
 
     public void applyRemoval(boolean toApply) {
-        List<Bookmark> bookmarkList = getBookmarkBarFlat();
+        List<Bookmark> bookmarkList = getBBarBookmarkFlat();
         if (toApply) {
             bookmarkList.forEach(Bookmark::remove);
         } else {
@@ -36,6 +52,9 @@ public class Bookmarks {
     }
 
     public long forRemovalCount() {
-        return getBookmarkBarFlat().stream().filter(Bookmark::isForRemoval).count();
+        return getBBarBookmarkFlat()
+                .stream()
+                .filter(Bookmark::isForRemoval)
+                .count();
     }
 }

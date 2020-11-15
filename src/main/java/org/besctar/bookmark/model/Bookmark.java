@@ -1,20 +1,23 @@
 package org.besctar.bookmark.model;
 
 import com.alibaba.fastjson.annotation.JSONField;
-import io.micronaut.core.util.StringUtils;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.besctar.bookmark.util.UrlFormat;
 
 import java.net.URI;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
 public class Bookmark {
     private String id;
@@ -37,6 +40,20 @@ public class Bookmark {
         this.url = UrlFormat.removeTrailingSlash(uri.toString());
     }
 
+    public List<Bookmark> getChildren() {
+        if (children == null) {
+            if (isDirectory()) {
+                children = new ArrayList<>();
+            }
+        }
+        return children;
+    }
+
+    @JSONField(serialize = false)
+    public int getIdInt() {
+        return Integer.parseInt(getId());
+    }
+
     @JSONField(serialize = false)
     public String getDomain() {
         return uri.getHost();
@@ -44,12 +61,12 @@ public class Bookmark {
 
     @JSONField(serialize = false)
     public boolean isDirectory() {
-        return "folder".equalsIgnoreCase(type);
+        return BookmarkType.FOLDER.getName().equalsIgnoreCase(type);
     }
 
     @JSONField(serialize = false)
     public boolean isBookmark() {
-        return "url".equalsIgnoreCase(type);
+        return BookmarkType.URL.getName().equalsIgnoreCase(type);
     }
 
     @JSONField(serialize = false)
@@ -69,10 +86,19 @@ public class Bookmark {
         if (!forRemoval) return;
         Optional.ofNullable(parent)
                 .ifPresent(it -> {
-                    it.children.remove(this);
+                    it.getChildren().remove(this);
                     parent = null;
+                    forRemoval = false;
                     log.info("Bookmark removed: " + getUrl());
                 });
+    }
+
+    public void moveToParent(Bookmark otherParent) {
+        if (!otherParent.isDirectory()) return;
+        parent.getChildren().remove(this);
+
+        parent = otherParent;
+        parent.getChildren().add(this);
     }
 
     public void initParentForChildren(UrlFormat urlFormat) {
@@ -89,17 +115,32 @@ public class Bookmark {
     }
 
     @JSONField(serialize = false)
-    public List<Bookmark> flattenChildren() {
-        return flattenChildrenStream().collect(Collectors.toList());
+    public List<Bookmark> flattenChildrenBookmarks() {
+        return flattenChildrenStream(Bookmark::isBookmark).collect(Collectors.toList());
     }
 
-    private Stream<Bookmark> flattenChildrenStream() {
-        if (StringUtils.hasText(url)) {
-            return Stream.of(this);
-        }
+    @JSONField(serialize = false)
+    public List<Bookmark> flattenChildrenDirectories() {
+        return flattenChildrenStream(Bookmark::isDirectory).collect(Collectors.toList());
+    }
+
+    public List<Bookmark> childrenByType(BookmarkType type) {
         return Optional.ofNullable(children)
                 .orElse(Collections.emptyList())
                 .stream()
-                .flatMap(it -> it.flattenChildrenStream());
+                .filter(it -> Objects.equals(it.type, type.getName()))
+                .collect(Collectors.toList());
+    }
+
+    Stream<Bookmark> flattenChildrenStream(Function<Bookmark, Boolean> predicate) {
+        Stream<Bookmark> selfStream = Stream.of(this)
+                .filter(it -> predicate.apply(it));
+        Stream<Bookmark> childrenStream = Optional.ofNullable(this.children)
+                .orElse(Collections.emptyList())
+                .stream()
+                .flatMap(it -> it.flattenChildrenStream(predicate));
+        return Stream.concat(
+                selfStream,
+                childrenStream);
     }
 }

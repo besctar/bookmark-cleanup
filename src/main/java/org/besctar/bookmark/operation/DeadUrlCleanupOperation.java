@@ -21,11 +21,11 @@ public class DeadUrlCleanupOperation implements CleanupOperation {
         log.info("Starting lookup for DEAD URLs...");
         log.info("Also urls will be process REDIRECTs and update itself...");
         log.info("Trash query params (specified in escapeQueryParams) will be cleaned up...");
-        List<Bookmark> bookmarkList = bookmarks.getBookmarkBarFlat();
+        List<Bookmark> bookmarkList = bookmarks.getBBarBookmarkFlat();
         ProcessingCounter counter = new ProcessingCounter(bookmarkList.size());
 
         List<CompletableFuture<UrlStatus>> urlCheckFutureList = bookmarkList.stream()
-                .map(b -> processBookmarkHandshake(b, counter, progressListener))
+                .map(b -> processBookmarkHandshake(b, progressListener))
                 .collect(Collectors.toList());
 
         CompletableFuture.allOf(urlCheckFutureList.toArray(CompletableFuture[]::new))
@@ -39,7 +39,7 @@ public class DeadUrlCleanupOperation implements CleanupOperation {
         log.info("Total deleted Urls: " + (counter.getTotal() - counter.getCountBy(UrlStatus.OK)));
     }
 
-    private CompletableFuture<UrlStatus> processBookmarkHandshake(Bookmark bookmark, ProcessingCounter counter, ProgressListener progressListener) {
+    private CompletableFuture<UrlStatus> processBookmarkHandshake(Bookmark bookmark, ProgressListener progressListener) {
         String url = bookmark.getUrl();
 
         return bkmrkHandshaker.handshake(url)

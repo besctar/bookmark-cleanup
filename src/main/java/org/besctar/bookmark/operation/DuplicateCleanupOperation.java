@@ -26,7 +26,7 @@ public class DuplicateCleanupOperation implements CleanupOperation {
 
     @Override
     public void execute(Bookmarks bookmarks, ProgressListener progressListener) {
-        List<Bookmark> bookmarkList = bookmarks.getBookmarkBarFlat();
+        List<Bookmark> bookmarkList = bookmarks.getBBarBookmarkFlat();
         long urlsCount = bookmarkList.size();
         Map<String, List<Bookmark>> groupingByAttrMap = bookmarkList.stream().collect(Collectors.groupingBy(bookmarkAttribute));
 

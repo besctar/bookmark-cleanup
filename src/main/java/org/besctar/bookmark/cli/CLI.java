@@ -24,6 +24,18 @@ public class CLI {
         }
     }
 
+    public int askForNumberInput(String msg, Object... params) {
+        println(msg, params);
+        while (true) {
+            String s = nextLine();
+            try {
+                return Integer.valueOf(s);
+            } catch (NumberFormatException ex) {
+                println("Entered value is not a number. Please correct.");
+            }
+        }
+    }
+
     public String askForInput(String msg, Object... params) {
         println(msg, params);
         return nextLine();
